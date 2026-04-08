@@ -81,7 +81,7 @@
     }
     .tag-blue { color: var(--blue-mid) }
     .tag-cream { color: var(--cream); }
-    .tag-navy  { color: var(--blue-mid); background: rgba(41,73,245,0.08); }
+    .tag-navy  { color: var(--blue-mid); }
 
     .section-heading {
       font-family: var(--font-mabry);
@@ -619,6 +619,7 @@ background: linear-gradient(180deg, rgba(252, 255, 194, 1) 0%, rgba(103, 119, 17
       position: absolute;
       inset: 0;
       width: 100%;
+      border-radius: 40px;
       height: 100%;
       object-fit: cover;
       object-position: center 30%;
@@ -1661,10 +1662,23 @@ background: linear-gradient(180deg, rgba(252, 255, 194, 1) 0%, rgba(103, 119, 17
       scrollTrigger: { trigger: '#how', start: 'top 65%' }
     });
 
-    gsap.to(['.how-card'], {
+    // Individual scroll triggers for each card
+    gsap.to('#card-1', {
       opacity: 1, y: 0, scale: 1,
-      duration: 0.75, stagger: 0.15, ease: 'power3.out',
-      scrollTrigger: { trigger: '#how-cards', start: 'top 70%' }
+      duration: 0.75, ease: 'power3.out',
+      scrollTrigger: { trigger: '#card-1', start: 'top 85%' }
+    });
+
+    gsap.to('#card-2', {
+      opacity: 1, y: 0, scale: 1,
+      duration: 0.75, ease: 'power3.out',
+      scrollTrigger: { trigger: '#card-2', start: 'top 85%' }
+    });
+
+    gsap.to('#card-3', {
+      opacity: 1, y: 0, scale: 1,
+      duration: 0.75, ease: 'power3.out',
+      scrollTrigger: { trigger: '#card-3', start: 'top 85%' }
     });
 
     /* Idle float animation (starts after cards appear) */
