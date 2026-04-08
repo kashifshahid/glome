@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GLOME — Safety you can see</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&family=DM+Sans:wght@600&display=swap" rel="stylesheet" />
+
+  <!-- GSAP CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-dark:   #14277c;
+      --blue-mid:    #18319e;
+      --blue:        #2949f5;
+      --navy:        #0c112b;
+      --cream:       #fdffc3;
+      --peach:       #fef5ee;
+      --white:       #ffffff;
+      --black:       #000000;
+      --font-mabry: 'Mabry Pro', 'Archivo', 'Inter', sans-serif;
+      --font-mono:  'DM Mono', 'Courier New', monospace;
+      --font-dm:    'DM Sans', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--font-mabry);
+      overflow-x: hidden;
+    }
+    img { display: block; max-width: 100%; }
+    button { cursor: pointer; border: none; background: none; }
+
+
+
+    /* ─── CURSOR ─── */
+    .cursor {
+    position: fixed; top: 0; left: 0; z-index: 9999;
+    pointer-events: none;
+    }
+    .cursor-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s;
+    }
+    .cursor-ring {
+    position: fixed; top: 0; left: 0;
+    width: 36px; height: 36px;
+    border: 1.5px solid rgba(200,169,110,0.5);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 9998;
+    transition: transform 0.08s, width 0.3s, height 0.3s, border-color 0.3s;
+    }
+
+    /* ─── Utilities ─────────────────────────────────────────── */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: 24px 24px 5px 5px;
+      padding: 6px 20px;
+    }
+    .tag-blue { color: var(--blue-mid); background: rgba(41,73,245,0.1); }
+    .tag-cream { color: var(--cream); }
+    .tag-navy  { color: var(--blue-mid); background: rgba(41,73,245,0.08); }
+
+    .section-heading {
+      font-family: var(--font-mabry);
+      font-size: clamp(48px, 6vw, 80px);
+      font-weight: 500;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+      text-align: center;
+    }
+
+    /* ─── Scroll progress bar ─────────────────────────────── */
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: var(--cream);
+      width: 0%;
+      z-index: 200;
+    }
+
+    /* ─── Navigation ────────────────────────────────────────── */
+    .nav {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: background 0.4s;
+    }
+    .nav-logo { height: 30px; width: 120px; }
+    .nav-btn {
+      font-family: var(--font-dm);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--white);
+      letter-spacing: -0.01em;
+      padding: 8px 28px;
+      border-radius: 58px;
+      border: 1.5px solid rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(8px);
+      transition: background 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.7); }
+
+    /* ─── Hero ──────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      min-height: 600px;
+      background: var(--blue-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    /* Bottom fade overlay — sits above glow, blends into page bg */
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0px; left: 0;
+      width: 100%;
+      height: 90%;
+      background: linear-gradient(to top, #13277c 4%, transparent 100%);
+      pointer-events: none;
+      z-index: 4;
+    }
+    .hero-roads {
+      display: none; /* solid dark background — no road pattern */
+    }
+    .hero-glow {
+      position: absolute;
+      /*
+        Geometry for target screenshot:
+          circle center = 20vh ABOVE viewport top
+          radius = 100vh
+          → dome arc bottom lands at exactly 80vh
+          → dome edge at viewport top ≈ ±98vh wide (just spills off screen left/right)
+
+        Element is 200vh × 200vh (radius=100vh).
+        top = center_y - radius = -20vh - 100vh = -120vh
+        left: 50%; GSAP xPercent:-50 centres it horizontally.
+        GSAP owns scaleX (narrow→wide) and opacity.
+      */
+      top: 15vh;
+      left: 50%;
+      width: 200vh;
+      max-width: 98%;
+      height: 200vh;
+      border-radius: 50%;
+      background: #FCFFC2;
+      /* Inverted dome: center is BELOW viewport.
+         Cream lives at the outer arc edge (visible at top),
+         fading inward toward blue/transparent. */
+/* background: #FCFFC2;
+background: linear-gradient(180deg, rgba(252, 255, 194, 1) 0%, rgba(103, 119, 177, 1) 55%, rgba(19, 39, 124, 1) 85%); */
+      pointer-events: none;
+      /* GSAP sets initial opacity:0, scaleX:0.36 for narrow-to-wide scroll */
+    }
+    .hero-text-wrap {
+      position: relative;
+      text-align: center;
+      z-index: 2;
+      padding: 0 32px;
+    }
+    .hero-headline {
+      font-family: var(--font-mabry);
+      font-size: clamp(72px, 13vw, 200px);
+      font-weight: 500;
+      line-height: 0.85;
+      letter-spacing: -0.04em;
+      color: var(--blue-dark);
+      overflow: hidden;
+    }
+    .hero-headline .word {
+      display: inline-block;
+      transform: translateY(110%);
+      opacity: 0;
+    }
+
+    /* ─── Scroll hint ───────────────────────────────────────── */
+    .scroll-hint {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 10;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .scroll-hint-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(253, 255, 195, 0.65);
+    }
+    .scroll-hint-arrows {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .scroll-hint-arrow {
+      width: 16px;
+      height: 16px;
+      border-right: 2px solid rgba(253, 255, 195, 0.8);
+      border-bottom: 2px solid rgba(253, 255, 195, 0.8);
+      transform: rotate(45deg);
+    }
+    .scroll-hint-arrow:nth-child(1) { animation: arrowBounce 1.4s ease-in-out infinite 0s;    opacity: 0.4; }
+    .scroll-hint-arrow:nth-child(2) { animation: arrowBounce 1.4s ease-in-out infinite 0.18s; opacity: 0.7; }
+    .scroll-hint-arrow:nth-child(3) { animation: arrowBounce 1.4s ease-in-out infinite 0.36s; opacity: 1;   }
+    @keyframes arrowBounce {
+      0%, 100% { transform: rotate(45deg) translate(0,   0);   }
+      50%       { transform: rotate(45deg) translate(3px, 3px); }
+    }
+
+    /* ─── Intro ─────────────────────────────────────────────── */
+    .intro {
+      background: var(--blue-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 64px;
+      padding: 120px 48px 140px;
+      text-align: center;
+      position: relative;
+    }
+    .intro-copy {
+      font-size: clamp(22px, 2.5vw, 40px);
+      font-weight: 500;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      max-width: 820px;
+      color: var(--white);
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    .cta-group {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 60px;
+      padding: 0 48px;
+      border-radius: 58px;
+      font-family: var(--font-mabry);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn-white { background: var(--white); color: var(--blue); }
+    .btn-outline-white { background: transparent; color: var(--white); border: 2px solid var(--white); }
+    .btn-blue { background: var(--blue); color: var(--white); }
+    .btn-outline-blue { background: transparent; color: var(--blue); border: 2px solid var(--blue); }
+
+    /* ─── Curve SVG transitions ─────────────────────────────── */
+    .curve { line-height: 0; display: block; width: 100%; }
+    .curve svg { display: block; width: 100%; border-radius: 240px !important; background: #feffc3; margin-bottom: -35px; }
+
+    /* ─── Product / Map Section ─────────────────────────────── */
+    .product { background: var(--cream); position: relative; }
+
+    .section-intro {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 36px;
+      padding: 96px 32px 80px;
+      text-align: center;
+    }
+    .section-intro .tag { opacity: 0; transform: translateY(16px); }
+    .section-intro h2 { opacity: 0; transform: translateY(28px); }
+
+    /* Map sticky */
+    .map-sticky-outer { position: relative; height: 400vh; }
+    .map-sticky-inner {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(180deg, var(--cream) 0%, var(--blue) 60%, var(--blue-dark) 100%);
+    }
+    .map-stage { position: absolute; inset: 0; }
+
+    .map-roads {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      mix-blend-mode: overlay;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    /* Home icons — width only; height auto from intrinsic ratio */
+    .map-home {
+      position: absolute;
+      opacity: 0;
+      height: auto;
+      object-fit: contain;
+      transform-origin: center bottom;
+    }
+    /* All phase-1 homes and pins start hidden */
+    .phase1-home { opacity: 0; }
+    .pin-group { opacity: 0; transform: translateY(10px); }
+
+    /* ─── Active home with pulsing glow rings ─────────────── */
+    .active-home-wrap {
+      position: absolute;
+      width: 88px;
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+    }
+
+    /* The rings sit behind the icon, centred */
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1.5px solid rgba(253, 255, 195, 0.55);
+      background: rgba(41, 73, 245, 0.08);
+      /* start invisible and small */
+      opacity: 0;
+      transform: scale(0.3);
+      /* each ring is progressively larger */
+      pointer-events: none;
+    }
+    .ring-1 { width: 130px; height: 130px; }
+    .ring-2 { width: 200px; height: 200px; border-color: rgba(253,255,195,0.32); }
+    .ring-3 { width: 290px; height: 290px; border-color: rgba(253,255,195,0.16); background: rgba(41,73,245,0.04); }
+    .ring-4 { width: 400px; height: 400px; border-color: rgba(253,255,195,0.07); background: transparent; }
+
+    /* Inner icon circle */
+    .active-home-icon {
+      position: relative;
+      z-index: 2;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(41, 73, 245, 0.85);
+      border: 2px solid rgba(253,255,195,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 24px rgba(41,73,245,0.7), 0 0 8px rgba(253,255,195,0.4);
+    }
+    .active-home-icon img {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    /* Rings start hidden — GSAP will animate them in */
+    .ring { will-change: transform, opacity; }
+
+    /* Report pins */
+    .pin-group {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+    }
+    .pin-icon { width: 39px; height: 44px; object-fit: contain; display: block; }
+    .pin-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--blue); }
+
+    /* ─── Walk path SVG — full stage overlay ─────────────────── */
+    #walk-path-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      overflow: visible;
+    }
+
+    /* ─── Walk avatar (location-pin photo) ──────────────────── */
+    /* Figma: left:126.5 top:363.75 size:24×24 in 1728×916 frame */
+    #walk-avatar {
+      position: absolute;
+      left:  7%;
+      top:   30%;
+      width:  56px;
+      height: 56px;
+      border-radius: 28px 28px 4px 4px;
+      overflow: hidden;
+      opacity: 0;
+      z-index: 10;
+      border: 2.5px solid var(--cream);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+      pointer-events: none;
+    }
+    #walk-avatar img {
+      width: 100%;
+      height: 115%;
+      object-fit: cover;
+      object-position: center top;
+      margin-top: -8%;
+    }
+
+    /* Downward cream triangle below avatar */
+    #walk-triangle {
+      position: absolute;
+      left:   calc(7% + 20px);
+      top:    calc(30% + 56px);
+      width: 0;
+      height: 0;
+      border-left:  8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top:   10px solid var(--cream);
+      opacity: 0;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+
+    /* Info module cards — all stack at same position, GSAP shows one at a time */
+    .map-module-wrap {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .map-module {
+      background: var(--white);
+      border-radius: 32px;
+      padding: 30px 24px;
+      width: 100%;
+      max-width: min(380px, calc(100% - 64px));
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(30px);
+      pointer-events: auto;
+      position: absolute;
+      bottom: 30%;
+      left: 50%;
+      translate: -50% 0;
+    }
+    .map-module-icon { height: 60px; width: auto; object-fit: contain; display: block; }
+    .map-module-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--blue-mid);
+      letter-spacing: -0.02em;
+    }
+    .map-module-body {
+      font-size: 17px;
+      line-height: 1.4;
+      color: var(--black);
+      letter-spacing: -0.01em;
+    }
+
+    /* ─── How It Works ──────────────────────────────────────── */
+    .how { background: var(--cream); }
+    .how-sticky-outer { position: relative; height: 280vh; }
+    .how-sticky-inner {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 60px;
+      overflow: hidden;
+      padding: 0 32px;
+    }
+    .how-section-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 36px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    .how-cards {
+      display: flex;
+      gap: 28px;
+      align-items: stretch;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .how-card {
+      background: var(--white);
+      border-radius: 48px;
+      padding: 44px;
+      width: 340px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+      opacity: 0;
+      transform: translateY(40px) scale(0.96);
+    }
+    .how-card-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--blue-mid);
+      letter-spacing: -0.02em;
+    }
+    .how-card-img {
+      height: auto;
+      width: 120px;
+      height: 120px;
+      align-self: center;
+    }
+    .how-card-body {
+      font-size: 16px;
+      line-height: 1.4;
+      color: var(--navy);
+      letter-spacing: -0.01em;
+    }
+
+    /* ─── Premium ───────────────────────────────────────────── */
+    .premium { background: var(--navy); }
+    .premium-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 64px;
+      padding: 96px 32px;
+    }
+    .premium-tag-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      opacity: 0;
+    }
+    .premium-star { width: 36px; height: 36px; transform: rotate(-30deg) scale(0.5); }
+    .premium-tag-text {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--cream);
+      text-transform: uppercase;
+    }
+    .premium-heading { color: var(--cream); opacity: 0; transform: translateY(36px); }
+    .premium-subhead {
+      font-size: clamp(16px, 1.4vw, 20px);
+      line-height: 1.4;
+      color: rgba(255,255,255,0.8);
+      max-width: 500px;
+      text-align: center;
+      letter-spacing: -0.01em;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .premium-image-wrap {
+      width: min(1100px, 90%);
+      aspect-ratio: 1100 / 520;
+      border-radius: 48px;
+      overflow: hidden;
+      position: relative;
+      opacity: 0;
+      transform: scale(0.93) translateY(20px);
+    }
+    .premium-image-wrap img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 30%;
+    }
+    .premium-features {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 48px;
+      width: min(1200px, 90%);
+    }
+    .premium-feature {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    .premium-feature-icon { width: 50px; height: 50px; object-fit: contain; }
+    .premium-feature-title { font-size: 20px; font-weight: 700; color: var(--white); letter-spacing: -0.03em; }
+    .premium-feature-body { font-size: 14px; line-height: 1.4; color: rgba(255,255,255,0.65); letter-spacing: -0.02em; }
+
+    /* ─── FAQ ───────────────────────────────────────────────── */
+    .faq { background: var(--peach); }
+    .faq-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 96px 32px 120px;
+    }
+    .faq-heading { color: var(--blue); margin-bottom: 72px; opacity: 0; transform: translateY(30px); }
+    .faq-list { width: min(1100px, 92%); }
+    .faq-item { border-bottom: 1.5px solid rgba(41,73,245,0.25); overflow: hidden; }
+    .faq-question {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 28px 24px;
+      cursor: pointer;
+      font-size: clamp(18px, 2vw, 28px);
+      font-weight: 700;
+      color: var(--blue-mid);
+      letter-spacing: -0.02em;
+      user-select: none;
+    }
+    .faq-icon-btn {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--blue-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: transform 0.35s;
+    }
+    .faq-icon-btn::before,
+    .faq-icon-btn::after {
+      content: '';
+      display: block;
+      position: absolute;
+      background: var(--blue-mid);
+      border-radius: 2px;
+      transition: transform 0.35s, opacity 0.35s;
+    }
+    .faq-icon-btn::before { width: 12px; height: 2px; }
+    .faq-icon-btn::after  { width: 2px; height: 12px; }
+    .faq-item.open .faq-icon-btn::after { opacity: 0; transform: scaleY(0); }
+    .faq-item.open .faq-icon-btn { border-color: var(--blue); }
+    .faq-item.open .faq-icon-btn::before { background: var(--blue); }
+
+    .faq-answer { height: 0; overflow: hidden; }
+    .faq-answer-inner {
+      padding: 0 24px 28px;
+      font-size: clamp(15px, 1.2vw, 18px);
+      line-height: 1.5;
+      color: var(--navy);
+      letter-spacing: -0.01em;
+      max-width: 780px;
+    }
+
+    /* ─── Final CTA ─────────────────────────────────────────── */
+    .final-cta {
+      /* Figma: peach 0% → cream 40% → blue 100% */
+      background: linear-gradient(180deg,
+        var(--peach) 0%,
+        var(--cream) 40%,
+        var(--blue)  100%
+      );
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 56px;
+      padding: 140px 0 100px;
+      text-align: center;
+    }
+
+    /* ─── Embrace illustration (imgGroup461504) ─────────────── */
+    /* Figma: h=1001.581px × w=1728px — full-width arms illustration  */
+    .embrace-section {
+      /* The image asset has its own gradient baked in — no bg needed here.
+         Zero out gap between sections. */
+      background: transparent;
+      line-height: 0;
+      overflow: hidden;
+      position: relative;
+      /* Enforce Figma aspect ratio: 1728 px wide × 1001.581 px tall = 1.7252 */
+      aspect-ratio: 1728 / 1001.581;
+      width: 100%;
+    }
+    .embrace-section img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;   /* fills section exactly, no letterboxing */
+      object-position: center top;
+      /* Animate in on scroll */
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    .final-heading {
+      font-size: clamp(52px, 6vw, 80px);
+      font-weight: 500;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+      color: var(--blue-mid);
+      opacity: 0;
+      transform: translateY(40px);
+    }
+
+    /* ─── Footer ────────────────────────────────────────────── */
+    .footer {
+      background: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 32px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-logo { height: 32px; width: 120px;}
+    .footer-links, .footer-social {
+      display: flex;
+      gap: 28px;
+      font-size: 15px;
+      color: var(--cream);
+      letter-spacing: -0.02em;
+    }
+    .footer-links a, .footer-social a {
+      color: var(--cream);
+      text-decoration: none;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+    .footer-links a:hover, .footer-social a:hover { opacity: 1; }
+
+    /* ─── Responsive ─────────────────────────────────────────── */
+
+    /* ── Tablet landscape 1024px ── */
+    @media (max-width: 1024px) {
+      .nav { padding: 20px 24px; }
+      .premium-features { grid-template-columns: repeat(2, 1fr); gap: 36px; }
+      .how-card { width: 300px; padding: 36px; }
+      .active-home-wrap { left: 14%; }
+    }
+
+    /* ── Tablet portrait 768px ── */
+    @media (max-width: 768px) {
+      .nav { padding: 16px 20px; }
+      .nav-btn { padding: 7px 18px; font-size: 14px; }
+
+      .intro { padding: 72px 24px 96px; gap: 40px; }
+
+      .section-intro { padding: 64px 24px 48px; gap: 24px; }
+
+      .how-sticky-inner { gap: 36px; padding: 0 20px; }
+      .how-card { width: calc(50% - 14px); min-width: 240px; padding: 32px; }
+      .how-card-title { font-size: 20px; }
+      .how-card-img { height: 80px; }
+
+      .premium-inner { padding: 72px 24px; gap: 48px; }
+      .premium-features { grid-template-columns: repeat(2, 1fr); gap: 28px; }
+      .premium-image-wrap { width: 96%; }
+
+      .map-module { width: min(380px, calc(100% - 48px)); padding: 36px 28px; border-radius: 36px; }
+
+      .faq-inner { padding: 72px 20px 96px; }
+      .faq-heading { margin-bottom: 48px; }
+
+      .final-cta { padding: 96px 24px 80px; gap: 40px; }
+      .final-heading { font-size: clamp(40px, 7vw, 72px); }
+
+      .footer { padding: 20px 24px; flex-direction: column; align-items: center; text-align: center; gap: 20px; }
+      .footer-links, .footer-social { justify-content: center; flex-wrap: wrap; }
+    }
+
+    /* ── Mobile 640px ── */
+    @media (max-width: 640px) {
+      /* Nav */
+      .nav { padding: 14px 16px; }
+      .nav-btn { padding: 6px 14px; font-size: 13px; }
+      .nav-logo { height: 24px; width: 200px; }
+
+      /* Hero */
+      .hero-text-wrap { padding: 0 16px; }
+
+      /* Shared headings */
+      .section-heading { font-size: clamp(32px, 9vw, 52px); }
+
+      /* Intro */
+      .intro { padding: 56px 20px 72px; gap: 32px; }
+      .intro-copy { font-size: clamp(17px, 4.5vw, 24px); }
+      .cta-group { flex-direction: column; align-items: stretch; width: min(300px, 100%); margin: 0 auto; }
+      .btn { height: 52px; padding: 0 28px; font-size: 17px; width: 100%; justify-content: center; }
+
+      /* Section intros */
+      .section-intro { padding: 48px 20px 36px; gap: 16px; }
+
+      /* Map section */
+      .active-home-wrap { left: 8%; transform: scale(0.8); transform-origin: top left; }
+      .map-module { width: calc(100% - 32px); padding: 24px 20px; border-radius: 28px; bottom: 24px; }
+      .map-module-title { font-size: 20px; }
+      .map-module-body { font-size: 15px; }
+      .map-module-icon { height: 48px; }
+
+      /* How section */
+      .how-sticky-outer { height: 380vh; }
+      .how-sticky-inner { gap: 28px; padding: 0 16px; justify-content: flex-start; padding-top: 80px; }
+      .how-cards { flex-direction: column; align-items: center; width: 100%; }
+      .how-card { width: min(360px, 100%); padding: 28px; border-radius: 32px; }
+
+      /* Premium */
+      .premium-inner { padding: 56px 20px; gap: 36px; }
+      .premium-features { grid-template-columns: 1fr 1fr; gap: 20px; }
+      .premium-feature-title { font-size: 16px; }
+      .premium-feature-body { font-size: 13px; }
+      .premium-image-wrap { border-radius: 28px; }
+
+      /* FAQ */
+      .faq-inner { padding: 56px 16px 80px; }
+      .faq-heading { margin-bottom: 40px; }
+      .faq-question { padding: 18px 12px; font-size: 16px; }
+      .faq-answer-inner { padding: 0 12px 18px; font-size: 15px; }
+
+      /* Final CTA */
+      .final-cta { padding: 64px 20px 56px; gap: 28px; }
+      .final-heading { font-size: clamp(36px, 9vw, 56px); }
+
+      /* Footer */
+      .footer { padding: 20px 16px; gap: 16px; flex-direction: column; align-items: center; text-align: center; }
+      .footer-links, .footer-social { gap: 16px; font-size: 13px; flex-wrap: wrap; justify-content: center; }
+    }
+
+    /* ── Small mobile 400px ── */
+    @media (max-width: 400px) {
+      .nav-btn { padding: 5px 12px; font-size: 12px; }
+      .premium-features { grid-template-columns: 1fr; }
+      .how-card { padding: 24px 20px; }
+      .footer-links, .footer-social { gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+    <!-- Custom cursor -->
+    <div class="cursor" id="cursor"><div class="cursor-dot"></div></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+    
+  <!-- Scroll Progress Bar -->
+  <div class="progress-bar" id="progress-bar"></div>
+
+  <!-- ─── Navigation ──────────────────────────────── -->
+  <nav class="nav" id="nav">
+    <button class="nav-btn">Download</button>
+    <img
+      class="nav-logo"
+      src="glome-logo.svg"
+      alt="GLOME"
+    />
+    <button class="nav-btn">Sign Up</button>
+  </nav>
+
+  <!-- ─── HERO ────────────────────────────────────── -->
+  <section class="hero" id="hero">
+    <div class="hero-glow" id="hero-glow"></div>
+    <img
+      class="hero-roads"
+      src="hero-road.svg"
+      alt="" aria-hidden="true"
+    />
+    <div class="hero-text-wrap">
+      <h1 class="hero-headline">
+        <span class="word">Safety you</span><br /> <span class="word">can</span>&nbsp;<span class="word">see</span>
+      </h1>
+    </div>
+
+    <!-- Scroll hint — fades in after load, hides on first scroll -->
+    <div class="scroll-hint" id="scroll-hint">
+      <span class="scroll-hint-label">Scroll</span>
+      <div class="scroll-hint-arrows">
+        <div class="scroll-hint-arrow"></div>
+        <div class="scroll-hint-arrow"></div>
+        <div class="scroll-hint-arrow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── INTRO ───────────────────────────────────── -->
+  <section class="intro" id="intro">
+    <p class="intro-copy" id="intro-copy">
+      A neighborhood network that makes safety visible, reliable, and close to home.
+    </p>
+    <div class="cta-group" id="intro-cta">
+      <a href="#" class="btn btn-white">Download for iOS</a>
+      <a href="#" class="btn btn-outline-white">Download for Android</a>
+    </div>
+  </section>
+
+  <!-- Curve: blue-dark → cream -->
+  <div class="curve" style="background:var(--blue-dark);">
+    <svg viewBox="0 0 1440 62" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" height="62">
+      <path d="M0,62 Q720,0 1440,62 L1440,62 L0,62 Z" fill="#fdffc3"/>
+    </svg>
+  </div>
+
+  <!-- ─── PRODUCT / MAP ───────────────────────────── -->
+  <section class="product" id="product">
+    <div class="section-intro" id="product-intro">
+      <span class="tag tag-blue" id="product-tag">Introducing Glome</span>
+      <h2 class="section-heading" id="product-heading" style="color:var(--blue);">What safety looks like</h2>
+    </div>
+
+    <div class="map-sticky-outer" id="map-outer">
+      <div class="map-sticky-inner" id="map-inner">
+        <div class="map-stage">
+
+          <!-- Roads overlay -->
+          <img class="map-roads"
+               src="map-road.svg"
+               alt="" aria-hidden="true" />
+
+          <!-- Phase 1: Home icons appear 1-by-1 (SVG house shapes, white) -->
+          <!-- home-a: top-left -->
+          <div class="map-home phase1-home" id="home-a" style="left:11%; top:12%;">
+            <svg width="56" height="52" viewBox="0 0 56 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M28 4L4 22V50H20V34H36V50H52V22L28 4Z" fill="white" opacity="0.9"/>
+              <rect x="22" y="34" width="12" height="16" fill="white" opacity="0.7"/>
+            </svg>
+          </div>
+          <!-- home-b: top-right -->
+          <div class="map-home phase1-home" id="home-b" style="right:20%; top:8%;">
+            <svg width="56" height="52" viewBox="0 0 56 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M28 4L4 22V50H20V34H36V50H52V22L28 4Z" fill="white" opacity="0.9"/>
+              <rect x="22" y="34" width="12" height="16" fill="white" opacity="0.7"/>
+            </svg>
+          </div>
+          <!-- home-c: bottom-center-left -->
+          <div class="map-home phase1-home" id="home-c" style="left:33%; bottom:14%;">
+            <svg width="56" height="52" viewBox="0 0 56 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M28 4L4 22V50H20V34H36V50H52V22L28 4Z" fill="white" opacity="0.9"/>
+              <rect x="22" y="34" width="12" height="16" fill="white" opacity="0.7"/>
+            </svg>
+          </div>
+          <!-- home-d: bottom-right — walk destination, aligns with orange path end -->
+          <div class="map-home phase1-home" id="home-d" style="right:4%; bottom:12%;">
+            <svg width="68" height="62" viewBox="0 0 56 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M28 4L4 22V50H20V34H36V50H52V22L28 4Z" fill="white" opacity="0.9"/>
+              <rect x="22" y="34" width="12" height="16" fill="white" opacity="0.7"/>
+            </svg>
+          </div>
+          <!-- active-home: left-middle — LAST to appear, gets pulsing rings -->
+          <div class="active-home-wrap phase1-home" id="active-home"
+               style="left:18%; top:50%; transform:translateY(-50%);">
+            <div class="ring ring-4" id="ring-4"></div>
+            <div class="ring ring-3" id="ring-3"></div>
+            <div class="ring ring-2" id="ring-2"></div>
+            <div class="ring ring-1" id="ring-1"></div>
+            <div class="active-home-icon">
+              <svg width="30" height="28" viewBox="0 0 56 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M28 4L4 22V50H20V34H36V50H52V22L28 4Z" fill="#fdffc3"/>
+                <rect x="22" y="34" width="12" height="16" fill="#fdffc3" opacity="0.8"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Report Pins -->
+          <div class="pin-group" id="pin-1" style="left:18%; bottom:12%;">
+            <img class="pin-icon" src="pin-1.svg" alt="" />
+            <div class="pin-dot"></div>
+          </div>
+          <div class="pin-group" id="pin-2" style="right:15%; top:25%;">
+            <img class="pin-icon" src="pin-2.svg" alt="" />
+            <div class="pin-dot"></div>
+          </div>
+          <div class="pin-group" id="pin-3" style="left:10%; top:40%;">
+            <img class="pin-icon" src="pin-3.svg" alt="" />
+            <div class="pin-dot"></div>
+          </div>
+          <div class="pin-group" id="pin-4" style="right:10%; bottom:12%;">
+            <img class="pin-icon" src="pin-4.svg" alt="" />
+            <div class="pin-dot"></div>
+          </div>
+          <div class="pin-group" id="pin-5" style="left:8%; top:38%;">
+            <img class="pin-icon" src="pin-5.svg" alt="" />
+            <div class="pin-dot"></div>
+          </div>
+
+          <!-- Walk route image (Figma asset: angular cream path following road grid) -->
+          <!-- Walk avatar: real photo with location-pin shape -->
+          <div id="walk-avatar">
+            <img
+              src="walk-avtaar.jpeg"
+              alt="walker"
+            />
+          </div>
+
+          <!-- Cream triangle pointing down, below avatar -->
+          <div id="walk-triangle"></div>
+
+          <!-- Walk route SVG — cream→orange gradient path -->
+          <svg id="walk-path-svg" xmlns="http://www.w3.org/2000/svg"
+               viewBox="0 0 1000 600" preserveAspectRatio="none"
+               style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;"
+               aria-hidden="true">
+            <defs>
+              <linearGradient id="walk-grad" gradientUnits="userSpaceOnUse"
+                x1="73" y1="238" x2="940" y2="540">
+                <stop offset="0%"   stop-color="#fdffc3"/>
+                <stop offset="48%"  stop-color="#fde68a"/>
+                <stop offset="100%" stop-color="#f97316"/>
+              </linearGradient>
+            </defs>
+            <path id="walk-polyline"
+              d="M73,238 L340,238 L340,130 L780,130 L780,540 L940,540"
+              fill="none"
+              stroke="url(#walk-grad)"
+              stroke-width="10"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+
+          <!-- Module wrap — all cards overlap here, shown/hidden via GSAP -->
+          <div class="map-module-wrap">
+            <div class="map-module" id="module-alerts">
+              <img class="map-module-icon"
+                   src="neibour.svg" alt="" />
+              <div class="map-module-title">Neighbour alerts</div>
+              <p class="map-module-body">
+                See what's happening around you, in real time, from people on your street.
+                Neighbour-to-neighbour alerts keep everyone informed.
+              </p>
+            </div>
+
+            <div class="map-module" id="module-walk">
+              <img class="map-module-icon"
+                   src="walk.svg" alt="" />
+              <div class="map-module-title">Walk with me</div>
+              <p class="map-module-body">
+                A companion for your route home. Share your route with people you trust so
+                someone always knows where you are, from start to doorstep.
+              </p>
+            </div>
+
+            <div class="map-module" id="module-reports">
+              <img class="map-module-icon"
+                   src="council.svg" alt="" />
+              <div class="map-module-title">Council reports</div>
+              <p class="map-module-body">
+                Report broken lights, hazards, and local issues in seconds.
+                Small fixes, handled faster.
+              </p>
+            </div>
+          </div>
+
+        </div><!-- /map-stage -->
+      </div><!-- /map-sticky-inner -->
+    </div><!-- /map-sticky-outer -->
+  </section>
+
+  <!-- Curve: cream → cream (interior transition) -->
+  <div class="curve" style="background:var(--cream);">
+    <svg viewBox="0 0 1440 62" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" height="62">
+      <path d="M0,0 Q720,62 1440,0 L1440,62 L0,62 Z" fill="var(--cream)"/>
+    </svg>
+  </div>
+
+  <!-- ─── HOW IT WORKS ─────────────────────────────── -->
+  <section class="how" id="how">
+    <div class="how-sticky-outer">
+      <div class="how-sticky-inner">
+        <div class="how-section-label" id="how-label">
+          <span class="tag tag-navy">How it works</span>
+          <h2 class="section-heading" style="color:var(--blue);">The visible human network</h2>
+        </div>
+        <div class="how-cards" id="how-cards">
+          <div class="how-card" id="card-1">
+            <div class="how-card-title">Claim your home</div>
+            <img class="how-card-img"
+                 src="claim-1.svg"
+                 alt="Claim home icon" />
+            <p class="how-card-body">Choose your address and we'll send a confirmation card to your home.</p>
+          </div>
+          <div class="how-card" id="card-2">
+            <div class="how-card-title">Verify your home</div>
+            <img class="how-card-img"
+                 src="claim-2.svg"
+                 alt="Verify home icon" />
+            <p class="how-card-body">Enter the code from your card to confirm your address.</p>
+          </div>
+          <div class="how-card" id="card-3">
+            <div class="how-card-title">Light up your street</div>
+            <img class="how-card-img"
+                 src="claim-3.svg"
+                 alt="Light up street icon" />
+            <p class="how-card-body">Once verified, your home lights up and your network of neighbours appears.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Curve: cream → navy -->
+  <div class="curve" style="background:var(--cream);">
+    <svg viewBox="0 0 1440 62" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" height="62">
+      <path d="M0,62 Q720,0 1440,62 L1440,62 L0,62 Z" fill="var(--navy)"/>
+    </svg>
+  </div>
+
+  <!-- ─── PREMIUM ──────────────────────────────────── -->
+  <section class="premium" id="premium">
+    <div class="premium-inner">
+      <div class="premium-tag-wrap" id="prem-tag-wrap">
+        <img class="premium-star" id="prem-star"
+             src="premium.svg" alt="" />
+        <span class="premium-tag-text">Premium</span>
+      </div>
+      <h2 class="section-heading premium-heading" id="prem-heading">Visible day and night</h2>
+      <p class="premium-subhead" id="prem-sub">
+        When you want added reassurance, Glome provides a consistent, professional patrol
+        presence in your neighborhood, led by a named local officer who knows the area.
+      </p>
+      <div class="premium-image-wrap" id="prem-img">
+        <img src="premium-inc.png"
+             alt="Premium patrol" />
+      </div>
+      <p style="font-size:clamp(22px,2vw,32px);font-weight:700;color:var(--cream);letter-spacing:-0.02em;opacity:0;transform:translateY(20px);" id="prem-label">
+        What's included
+      </p>
+      <div class="premium-features" id="prem-features">
+        <div class="premium-feature" id="pf-1">
+          <img class="premium-feature-icon"
+               src="name-officer.svg" alt="" />
+          <div class="premium-feature-title">Named officer</div>
+          <p class="premium-feature-body">Your street is supported by a dedicated officer who knows the area</p>
+        </div>
+        <div class="premium-feature" id="pf-2">
+          <img class="premium-feature-icon"
+               src="patrol-response.svg" alt="" />
+          <div class="premium-feature-title">Patrol response</div>
+          <p class="premium-feature-body">Request a patrol pass or set a scheduled route through the app.</p>
+        </div>
+        <div class="premium-feature" id="pf-3">
+          <img class="premium-feature-icon"
+               src="sos.svg" alt="" />
+          <div class="premium-feature-title">SOS escalation</div>
+          <p class="premium-feature-body">Your officer is first in the alert chain, notified before anyone else.</p>
+        </div>
+        <div class="premium-feature" id="pf-4">
+          <img class="premium-feature-icon"
+               src="key.svg" alt="" />
+          <div class="premium-feature-title">Key holding</div>
+          <p class="premium-feature-body">Keys are securely held so officers can respond quickly when needed.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Curve: navy → peach -->
+  <div class="curve" style="background:var(--navy);">
+    <svg viewBox="0 0 1440 62" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" height="62">
+      <path d="M0,62 Q720,0 1440,62 L1440,62 L0,62 Z" fill="var(--peach)"/>
+    </svg>
+  </div>
+
+  <!-- ─── FAQ ──────────────────────────────────────── -->
+  <section class="faq" id="faq">
+    <div class="faq-inner">
+      <h2 class="section-heading faq-heading" id="faq-heading">FAQs</h2>
+      <div class="faq-list" id="faq-list">
+
+        <div class="faq-item">
+          <div class="faq-question" role="button" tabindex="0">
+            Is Glome free?
+            <span class="faq-icon-btn" aria-hidden="true"></span>
+          </div>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Yes — the core Glome app is completely free. You can claim your home, receive neighbour
+              alerts, use Walk With Me, and file council reports at no cost. Premium is an optional
+              subscription for dedicated patrol support.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" role="button" tabindex="0">
+            Do I need a card to join?
+            <span class="faq-icon-btn" aria-hidden="true"></span>
+          </div>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              You'll need a confirmation card to fully verify your address. After signing up, we mail
+              a card with a unique code. Enter it in the app and your home lights up on the map.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item open">
+          <div class="faq-question" role="button" tabindex="0">
+            Is my exact address public?
+            <span class="faq-icon-btn" aria-hidden="true"></span>
+          </div>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              No. Your exact address is never shared publicly. Neighbours can see that a verified
+              home exists nearby, but your precise house number remains private. You control what
+              information is visible and to whom.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" role="button" tabindex="0">
+            How local is it?
+            <span class="faq-icon-btn" aria-hidden="true"></span>
+          </div>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Very. Glome is built around your immediate neighbourhood — typically a few streets in
+              each direction. You'll only see and hear from people who live close by.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" role="button" tabindex="0">
+            What can neighbours reply with?
+            <span class="faq-icon-btn" aria-hidden="true"></span>
+          </div>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Neighbours can acknowledge alerts, add context, or mark them as resolved. Responses
+              are visible to the local network so everyone stays informed.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" role="button" tabindex="0">
+            Can I upgrade to Premium later?
+            <span class="faq-icon-btn" aria-hidden="true"></span>
+          </div>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Absolutely. Start with the free plan and upgrade at any time from within the app.
+              No commitment required to get started.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Curve: peach → cream -->
+  <!-- <div class="curve" style="background:var(--peach);">
+    <svg viewBox="0 0 1440 62" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" height="62">
+      <path d="M0,0 Q720,62 1440,0 L1440,62 L0,62 Z" fill="var(--cream)"/>
+    </svg>
+  </div> -->
+
+  <!-- ─── FINAL CTA ────────────────────────────────── -->
+  <section class="final-cta" id="final-cta">
+    <h2 class="section-heading final-heading" id="final-heading">
+      Welcome to the<br>neighborhood
+    </h2>
+    <div class="cta-group" id="final-cta-btns">
+      <a href="#" class="btn btn-blue">Download for iOS</a>
+      <a href="#" class="btn btn-outline-blue">Download for Android</a>
+    </div>
+
+
+      <!-- ─── EMBRACE ILLUSTRATION ───────────────────── -->
+        <!-- Figma node 0:2896 — imgGroup461504 — full-width hugging arms -->
+        <div class="embrace-section" id="embrace-section">
+            <img
+            id="embrace-img"
+            src="embrace-img.svg"
+            alt="Welcome to the neighborhood illustration"
+            />
+        </div>
+  </section>
+
+
+  <!-- ─── FOOTER ───────────────────────────────────── -->
+  <footer class="footer">
+    <nav class="footer-links">
+      <a href="#">Join</a>
+      <a href="#">Contact</a>
+      <a href="#">Careers</a>
+    </nav>
+    <img class="footer-logo"
+         src="footer-logo.svg"
+         alt="GLOME" />
+    <nav class="footer-social">
+      <a href="#">IG</a>
+      <a href="#">FB</a>
+      <a href="#">YT</a>
+      <a href="#">TT</a>
+      <a href="#">X</a>
+    </nav>
+  </footer>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       GSAP ANIMATIONS
+  ══════════════════════════════════════════════════════════ -->
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    /* ── Scroll progress bar ───────────────────────────── */
+    gsap.to('#progress-bar', {
+      width: '100%',
+      ease: 'none',
+      scrollTrigger: { scrub: 0.3, start: 'top top', end: 'bottom bottom' }
+    });
+
+    /* ── NAV: entrance + scroll background ─────────────── */
+    gsap.to('#nav', {
+      opacity: 1, y: 0,
+      duration: 1, ease: 'power3.out', delay: 0.3
+    });
+
+    ScrollTrigger.create({
+      start: '60px top',
+      onEnter()    { gsap.to('#nav', { background: 'rgba(12,17,43,0.82)', backdropFilter: 'blur(14px)', duration: 0.4 }); },
+      onLeaveBack(){ gsap.to('#nav', { background: 'transparent', backdropFilter: 'none', duration: 0.4 }); }
+    });
+
+    /* ── HERO: glow descends from top like a light being switched on ── */
+    /* ══════════════════════════════════════════════════════
+       HERO GLOW  —  matches Figma scroll animation exactly:
+       ① Page load: narrow spotlight descends from top
+       ② Scroll:    scaleX expands narrow→wide dome (scrub)
+       ══════════════════════════════════════════════════════ */
+
+    /*
+      START STATE  (screenshot 2): scaleX ≈ 0.38 → narrow tall oval
+        visible dome width ≈ 0.38 × 92vw = 35vw
+      END STATE    (screenshot 1): scaleX = 1   → full wide dome
+        visible dome width ≈ 92vw
+      transformOrigin: 'center top' keeps the TOP PEAK fixed while
+      left/right edges sweep outward, exactly matching Figma.
+    */
+
+    /* ─── HERO GLOW — half-sun dome rising from top ────────────
+       Circle center = top of viewport (xPercent:-50, yPercent:-50).
+       Narrow on load → expands wide on scroll, like a sunrise.
+    ─────────────────────────────────────────────────────────── */
+
+    /* ─── HERO GLOW — half-sun dome ────────────────────────────
+       CSS positions the circle centre 20vh above the viewport.
+       scaleX animates narrow→wide on scroll so the dome unfurls.
+    ─────────────────────────────────────────────────────────── */
+
+    /* Initial: zero width */
+    gsap.set('#hero-glow', {
+      xPercent: -50,
+      scaleX:    0,
+      transformOrigin: 'center center',
+      opacity:   1
+    });
+
+    /* Scroll-scrub: 0 → full screen dome; hero pinned until complete */
+    gsap.to('#hero-glow', {
+      scaleX: 1,
+      ease:   'power2.out',
+      scrollTrigger: {
+        trigger:       '#hero',
+        start:         'top top',
+        end:           '+=150%',
+        pin:           true,
+        anticipatePin: 1,
+        scrub:         1.5
+      }
+    });
+
+    /* ③ Subtle breathe — glow feels alive */
+    gsap.to('#hero-glow', {
+      scaleY:   1.025,
+      duration: 5.5,
+      ease:     'sine.inOut',
+      repeat:   -1,
+      yoyo:     true,
+      delay:    2
+    });
+
+    /* ── HERO: words stagger in after glow appears ──────── */
+    gsap.to('.hero-headline .word', {
+      y: 0, opacity: 1,
+      duration: 1.0, ease: 'power4.out',
+      stagger: 0.13, delay: 0.65
+    });
+
+    /* Roads hidden — solid dark background */
+
+    /* ── SCROLL HINT ─────────────────────────────────────────
+       Fades in 1s after load, hides on scroll down,
+       reappears when user scrolls back to top             */
+    gsap.to('#scroll-hint', {
+      opacity: 1, duration: 0.8, ease: 'power2.out', delay: 1.0
+    });
+    ScrollTrigger.create({
+      start: 'top -1px',   /* triggers the moment page scrolls 1px */
+      onEnter()     { gsap.to('#scroll-hint', { opacity: 0, y: 12, duration: 0.3, ease: 'power2.in'  }); },
+      onLeaveBack() { gsap.to('#scroll-hint', { opacity: 1, y: 0,  duration: 0.5, ease: 'power2.out' }); }
+    });
+
+    /* ── INTRO ──────────────────────────────────────────── */
+    gsap.to('#intro-copy', {
+      y: 0, opacity: 1, duration: 1, ease: 'power3.out',
+      scrollTrigger: { trigger: '#intro', start: 'top 78%' }
+    });
+    gsap.from('#intro-cta .btn', {
+      y: 24, opacity: 0,
+      duration: 0.7, stagger: 0.14, ease: 'power3.out',
+      scrollTrigger: { trigger: '#intro-cta', start: 'top 85%' }
+    });
+
+    /* ── PRODUCT section intro ──────────────────────────── */
+    const productTL = gsap.timeline({
+      scrollTrigger: { trigger: '#product-intro', start: 'top 78%' }
+    });
+    productTL
+      .to('#product-tag',     { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' })
+      .to('#product-heading', { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out' }, '-=0.3');
+
+    /* ═══════════════════════════════════════════════════════════
+       MAP SECTION — 3-phase scroll animation
+       Phase 1: Home icons 1-by-1 → last one gets pulsing rings
+       Phase 2: Homes fade out (right one stays) → avatar + path
+       Phase 3: Walk hides → report pins appear 1-by-1
+    ═══════════════════════════════════════════════════════════ */
+
+    /* Helper: start pulsing rings on active-home */
+    function startRings() {
+      gsap.to('.active-home-icon', {
+        scale: 1.08, duration: 1.4,
+        ease: 'sine.inOut', repeat: -1, yoyo: true
+      });
+      const rings = ['#ring-1','#ring-2','#ring-3','#ring-4'];
+      rings.forEach((id, i) => {
+        gsap.to(id, { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.4)', delay: i * 0.15 });
+        gsap.to(id, {
+          scale: 1.2, opacity: 0, duration: 2.2, ease: 'power1.out',
+          repeat: -1, delay: 0.8 + i * 0.5, repeatDelay: 0.1,
+          onRepeat() { gsap.set(id, { scale: 0.85, opacity: 0.65 }); }
+        });
+      });
+    }
+
+    function stopRings() {
+      gsap.killTweensOf('.active-home-icon');
+      gsap.killTweensOf(['#ring-1','#ring-2','#ring-3','#ring-4']);
+      gsap.to(['#ring-1','#ring-2','#ring-3','#ring-4'], { opacity: 0, scale: 0.3, duration: 0.3 });
+    }
+
+    /* ── MAP ICONS: scroll-driven zoom in/out pulse ─────────
+       Each visible icon breathes (scale 1→1.12→1) as its
+       section is active, creating a living-map feel.        */
+    function pulseIcons(targets) {
+      gsap.killTweensOf(targets);
+      gsap.fromTo(targets,
+        { scale: 0.85, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(1.6)', stagger: 0.12,
+          onComplete() {
+            gsap.to(targets, {
+              scale: 1.12, duration: 0.7, ease: 'sine.inOut',
+              yoyo: true, repeat: -1, stagger: { each: 0.2, from: 'random' }
+            });
+          }
+        }
+      );
+    }
+    function stopPulse(targets) {
+      gsap.killTweensOf(targets);
+      gsap.to(targets, { scale: 1, duration: 0.25 });
+    }
+
+    /* ── PHASE 1: Neighbour Alerts ───────────────────────── */
+    ScrollTrigger.create({
+      trigger: '#map-outer',
+      start: 'top top',
+      end: '33% top',
+      onEnter() {
+        /* Hide everything first */
+        gsap.set(['.phase1-home', '.pin-group', '#walk-path-svg', '#walk-avatar', '#walk-triangle'], { opacity: 0 });
+        gsap.set(['.map-module'], { opacity: 0, y: 30 });
+
+        /* Home icons appear 1-by-1 with zoom-in pop */
+        const homes = ['#home-a','#home-b','#home-c','#home-d'];
+        homes.forEach((id, i) => {
+          gsap.fromTo(id,
+            { opacity: 0, scale: 0.5 },
+            { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.8)', delay: i * 0.22 }
+          );
+        });
+        /* Active home pops in last, then rings + pulse loop */
+        gsap.fromTo('#active-home',
+          { opacity: 0, scale: 0.5 },
+          { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.8)',
+            delay: homes.length * 0.22, onComplete: startRings }
+        );
+        /* Continuous zoom pulse on static homes after they appear */
+        setTimeout(() => {
+          gsap.to(['#home-a','#home-b','#home-c','#home-d'], {
+            scale: 1.12, duration: 0.8, ease: 'sine.inOut',
+            yoyo: true, repeat: -1, stagger: { each: 0.3, from: 'random' }
+          });
+        }, homes.length * 220 + 600);
+
+        /* Module card */
+        gsap.to('#module-alerts', { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out', delay: 0.6 });
+      },
+      onLeaveBack() {
+        stopRings();
+        gsap.killTweensOf(['#home-a','#home-b','#home-c','#home-d']);
+        gsap.to('.phase1-home', { opacity: 0, scale: 0.8, duration: 0.35 });
+        gsap.to('#module-alerts', { opacity: 0, y: 30, duration: 0.35 });
+      }
+    });
+
+    /* ── PHASE 2: Walk With Me ───────────────────────────── */
+    ScrollTrigger.create({
+      trigger: '#map-outer',
+      start: '33% top',
+      end: '66% top',
+      onEnter() {
+        stopRings();
+        gsap.to(['#home-a','#home-b','#home-c','#active-home'], { opacity: 0, duration: 0.4 });
+        gsap.to('#module-alerts', { opacity: 0, y: -20, duration: 0.3 });
+
+        /* home-d: zoom-in pop then continuous pulse */
+        gsap.killTweensOf('#home-d');
+        gsap.fromTo('#home-d', { scale: 0.8 },
+          { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.8)', delay: 0.3,
+            onComplete() {
+              gsap.to('#home-d', { scale: 1.15, duration: 0.8, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+            }
+          }
+        );
+
+        /* Avatar pops in with zoom */
+        gsap.fromTo(['#walk-avatar','#walk-triangle'],
+          { opacity: 0, scale: 0.5 },
+          { opacity: 1, scale: 1, duration: 0.55, ease: 'back.out(1.8)', delay: 0.4 }
+        );
+
+        /* Draw gradient path */
+        const walkPath = document.getElementById('walk-polyline');
+        const pathLen  = walkPath.getTotalLength();
+        gsap.set('#walk-path-svg', { opacity: 1 });
+        gsap.set(walkPath, { strokeDasharray: pathLen, strokeDashoffset: pathLen });
+        gsap.to(walkPath, { strokeDashoffset: 0, duration: 2.2, ease: 'power2.inOut', delay: 0.6 });
+
+        /* Module card */
+        gsap.to('#module-walk', { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out', delay: 0.9 });
+      },
+      onLeaveBack() {
+        gsap.to(['#home-a','#home-b','#home-c'], { opacity: 1, duration: 0.4 });
+        gsap.to('#home-d', { scale: 1, duration: 0.3 });
+        gsap.to('#active-home', { opacity: 1, duration: 0.5, onComplete: startRings });
+        gsap.to(['#walk-path-svg','#walk-avatar','#walk-triangle'], { opacity: 0, duration: 0.35 });
+        const _wp = document.getElementById('walk-polyline');
+        if (_wp) gsap.set(_wp, { strokeDashoffset: _wp.getTotalLength() });
+        gsap.to('#module-walk', { opacity: 0, y: 30, duration: 0.35 });
+        gsap.to('#module-alerts', { opacity: 1, y: 0, duration: 0.5, delay: 0.2 });
+      }
+    });
+
+    /* ── PHASE 3: Council Reports ────────────────────────── */
+    ScrollTrigger.create({
+      trigger: '#map-outer',
+      start: '66% top',
+      end: '100% top',
+      onEnter() {
+        gsap.to(['#home-d','#walk-path-svg','#walk-avatar','#walk-triangle'], { opacity: 0, duration: 0.4 });
+        gsap.to('#module-walk', { opacity: 0, y: -20, duration: 0.3 });
+
+        /* Pins: zoom-in pop 1-by-1 then pulse loop */
+        gsap.killTweensOf('.pin-group');
+        gsap.fromTo('.pin-group',
+          { opacity: 0, scale: 0.4, y: 10 },
+          { opacity: 1, scale: 1, y: 0,
+            duration: 0.5, stagger: 0.18, ease: 'back.out(1.8)', delay: 0.3,
+            onComplete() {
+              gsap.to('.pin-group', {
+                scale: 1.12, duration: 0.7, ease: 'sine.inOut',
+                yoyo: true, repeat: -1, stagger: { each: 0.25, from: 'random' }
+              });
+            }
+          }
+        );
+
+        /* Module card */
+        gsap.to('#module-reports', { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out', delay: 0.5 });
+      },
+      onLeaveBack() {
+        gsap.killTweensOf('.pin-group');
+        gsap.to('.pin-group', { opacity: 0, scale: 0.8, y: 10, duration: 0.35 });
+        gsap.to('#module-reports', { opacity: 0, y: 30, duration: 0.35 });
+        gsap.to('#home-d', { opacity: 1, duration: 0.4 });
+        const _wp2 = document.getElementById('walk-polyline');
+        if (_wp2) gsap.set(_wp2, { strokeDashoffset: 0 });
+        gsap.to('#walk-path-svg', { opacity: 1, duration: 0.3 });
+        gsap.to(['#walk-avatar','#walk-triangle'], { opacity: 1, duration: 0.3 });
+        gsap.to('#module-walk', { opacity: 1, y: 0, duration: 0.5, delay: 0.2 });
+      }
+    });
+
+    /* ── HOW IT WORKS ────────────────────────────────────── */
+    gsap.to('#how-label', {
+      opacity: 1, y: 0, duration: 0.75, ease: 'power3.out',
+      scrollTrigger: { trigger: '#how', start: 'top 65%' }
+    });
+
+    gsap.to(['.how-card'], {
+      opacity: 1, y: 0, scale: 1,
+      duration: 0.75, stagger: 0.15, ease: 'power3.out',
+      scrollTrigger: { trigger: '#how-cards', start: 'top 70%' }
+    });
+
+    /* Idle float animation (starts after cards appear) */
+    ScrollTrigger.create({
+      trigger: '#how-cards', start: 'top 70%', once: true,
+      onEnter() {
+        setTimeout(() => {
+          gsap.to('#card-1', { y: -9, duration: 2.8, ease: 'sine.inOut', repeat: -1, yoyo: true });
+          gsap.to('#card-2', { y: -9, duration: 3.1, ease: 'sine.inOut', repeat: -1, yoyo: true, delay: 0.5 });
+          gsap.to('#card-3', { y: -9, duration: 2.6, ease: 'sine.inOut', repeat: -1, yoyo: true, delay: 1 });
+        }, 900);
+      }
+    });
+
+    /* ── PREMIUM ─────────────────────────────────────────── */
+    const premTL = gsap.timeline({
+      scrollTrigger: { trigger: '#premium', start: 'top 68%' }
+    });
+    premTL
+      .to('#prem-tag-wrap', { opacity: 1, duration: 0.5 })
+      .to('#prem-star', { scale: 1, rotate: 0, duration: 0.8, ease: 'back.out(2)' }, '<')
+      .to('#prem-heading', { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.4')
+      .to('#prem-sub',     { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out' }, '-=0.5');
+
+    gsap.to('#prem-img', {
+      opacity: 1, scale: 1, y: 0,
+      duration: 1, ease: 'power3.out',
+      scrollTrigger: { trigger: '#prem-img', start: 'top 82%' }
+    });
+
+    /* Premium image parallax */
+    gsap.to('#prem-img img', {
+      y: '-12%', ease: 'none',
+      scrollTrigger: {
+        trigger: '#premium',
+        start: 'top bottom', end: 'bottom top', scrub: true
+      }
+    });
+
+    gsap.to('#prem-label', {
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: '#prem-label', start: 'top 82%' }
+    });
+
+    gsap.to('.premium-feature', {
+      opacity: 1, y: 0,
+      duration: 0.65, stagger: 0.11, ease: 'power3.out',
+      scrollTrigger: { trigger: '#prem-features', start: 'top 82%' }
+    });
+
+    /* ── FAQ ─────────────────────────────────────────────── */
+    gsap.to('#faq-heading', {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: '#faq', start: 'top 70%' }
+    });
+
+    gsap.from('.faq-item', {
+      y: 20, opacity: 0,
+      duration: 0.55, stagger: 0.07, ease: 'power3.out',
+      scrollTrigger: { trigger: '#faq-list', start: 'top 80%' }
+    });
+
+    /* FAQ accordion */
+    document.querySelectorAll('.faq-question').forEach(q => {
+      const item   = q.closest('.faq-item');
+      const answer = item.querySelector('.faq-answer');
+      const inner  = answer.querySelector('.faq-answer-inner');
+
+      /* init open state */
+      if (item.classList.contains('open')) {
+        gsap.set(answer, { height: inner.offsetHeight });
+      }
+
+      q.addEventListener('click', () => {
+        const wasOpen = item.classList.contains('open');
+
+        /* Close all open items */
+        document.querySelectorAll('.faq-item.open').forEach(openItem => {
+          openItem.classList.remove('open');
+          gsap.to(openItem.querySelector('.faq-answer'), {
+            height: 0, duration: 0.38, ease: 'power3.inOut'
+          });
+        });
+
+        /* Open the clicked one if it was closed */
+        if (!wasOpen) {
+          item.classList.add('open');
+          gsap.fromTo(answer,
+            { height: 0 },
+            { height: inner.offsetHeight, duration: 0.45, ease: 'power3.out' }
+          );
+        }
+      });
+
+      q.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); q.click(); }
+      });
+    });
+
+    /* ── FINAL CTA ───────────────────────────────────────── */
+    gsap.to('#final-heading', {
+      opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
+      scrollTrigger: { trigger: '#final-cta', start: 'top 72%' }
+    });
+
+    gsap.from('#final-cta-btns .btn', {
+      y: 24, opacity: 0,
+      duration: 0.7, stagger: 0.14, ease: 'power3.out',
+      scrollTrigger: { trigger: '#final-cta-btns', start: 'top 85%' }
+    });
+
+    /* ── Embrace illustration (arms / hug) ───────────────── */
+    /* Slides up and fades in as user reaches the embrace section */
+    gsap.to('#embrace-img', {
+      opacity: 1,
+      y: 0,
+      duration: 1.2,
+      ease: 'power3.out',
+      scrollTrigger: {
+        trigger: '#embrace-section',
+        start: 'top 85%'
+      }
+    });
+
+    /* Parallax: arms drift upward as you scroll past for depth */
+    gsap.to('#embrace-img', {
+      y: '-8%',
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#embrace-section',
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: true
+      }
+    });
+
+    /* ── Magnetic button hover ───────────────────────────── */
+    document.querySelectorAll('.btn, .nav-btn').forEach(btn => {
+      btn.addEventListener('mousemove', e => {
+        const r  = btn.getBoundingClientRect();
+        const cx = r.left + r.width  / 2;
+        const cy = r.top  + r.height / 2;
+        gsap.to(btn, {
+          x: (e.clientX - cx) * 0.28,
+          y: (e.clientY - cy) * 0.28,
+          duration: 0.35, ease: 'power2.out'
+        });
+      });
+      btn.addEventListener('mouseleave', () => {
+        gsap.to(btn, { x: 0, y: 0, duration: 0.55, ease: 'elastic.out(1, 0.5)' });
+      });
+    });
+
+  
+// ─── CURSOR ───
+const cursorDot  = document.getElementById('cursor');
+const cursorRing = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  gsap.to(cursorDot, { x: mx, y: my, duration: 0.1, ease: 'power2.out' });
+});
+function animateRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) *.12;
+  cursorRing.style.left = rx + 'px';
+  cursorRing.style.top  = ry + 'px';
+  requestAnimationFrame(animateRing);
+}
+animateRing();
+
+document.querySelectorAll('button, a').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    gsap.to(cursorRing, { width: 56, height: 56, borderColor: 'rgba(200,169,110,0.8)', duration: 0.3 });
+  });
+  el.addEventListener('mouseleave', () => {
+    gsap.to(cursorRing, { width: 36, height: 36, borderColor: 'rgba(200,169,110,0.5)', duration: 0.3 });
+  });
+});
+
+  </script>
+</body>
+</html>

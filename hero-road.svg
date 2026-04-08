@@ -1,0 +1,43 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 2081.15 1847.88" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Roads" style="mix-blend-mode:overlay" opacity="0.3">
+<path id="Rd L" d="M5.5332 1445.54L1152.61 1417.56H2075.86" stroke="var(--stroke-0, white)" stroke-width="27.9774"/>
+<path id="Rd L_2" d="M1059.35 2.37372L1180.59 706.472V1259.03L1152.61 1422.23L1164.26 1825.57" stroke="var(--stroke-0, white)" stroke-width="27.9774"/>
+<g id="X">
+<path id="Rd X 2" d="M597.723 32.6784V307.79L1001.06 1396.58L1002.23 1813.91" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 1" d="M679.324 1806.91L645.518 438.35" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 7" d="M508.545 1847.71L474.156 312.452" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 8" d="M334.268 1806.91L302.793 312.452" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 9" d="M162.906 1806.91L131.432 312.452" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 3" d="M834.365 1806.91L811.051 880.155" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 4" d="M1378.76 1416.39L1378.76 354.803" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 10" d="M392.555 312.414L387.893 32.6784" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 11" d="M203.707 312.414L199.045 32.6784" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 5" d="M1656.2 1416.39L1656.2 354.803" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 6" d="M1935.98 1416.4V852.186" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 5_2" d="M1311.15 1817.41V1416.4" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 6_2" d="M1451.03 1817.41V1416.4" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 7_2" d="M1590.92 1817.41V1416.4" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 8_2" d="M1730.81 1817.41V1416.4" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 9_2" d="M1870.7 1817.41V1416.4" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd X 10_2" d="M2010.58 1817.41V1416.4" stroke="var(--stroke-0, white)" stroke-width="15"/>
+</g>
+<g id="Y">
+<path id="Rd Y 1" d="M1089.66 160.905L0.871094 188.882" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 2" d="M1107.15 291.467L600.637 305.456L0.871094 319.445" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 3" d="M1792.47 453.835L645.518 454.829" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 4" d="M1796.95 584.061L645.518 592.221" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 5" d="M1790.26 711.132L645.518 728.617" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 6" d="M2081.11 853.35H0.871094" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 7" d="M2081.11 994.405H0.871094" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 8" d="M2081.11 1135.46L662.42 1142.45" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 9" d="M2081.11 1276.51L666.5 1282.92" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 14" d="M663.004 1197.23L0.871094 1207.72" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 15" d="M652.512 651.678L0.871094 662.17" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 16" d="M646.682 454.772H0" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 10" d="M2081.11 1574.93H1157.27L502.133 1669.35" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 12" d="M2081.11 1743.97H1157.27L502.133 1838.39" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 11" d="M503.882 1595.91L0.871094 1620.4" stroke="var(--stroke-0, white)" stroke-width="15"/>
+<path id="Rd Y 13" d="M505.631 1769.61L0.871094 1791.76" stroke="var(--stroke-0, white)" stroke-width="15"/>
+</g>
+</g>
+</svg>
